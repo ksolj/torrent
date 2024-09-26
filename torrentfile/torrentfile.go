@@ -1,7 +1,5 @@
 package torrentfile
 
-// TODO: update this package according to og repo
-
 import (
 	"bytes"
 	"crypto/rand"
