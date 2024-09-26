@@ -7,6 +7,7 @@ import (
 	"log"
 	"runtime"
 	"time"
+	"torrent/client"
 	"torrent/message"
 	"torrent/peers"
 )
