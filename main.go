@@ -3,11 +3,24 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
+	"torrent/torrentfile"
 )
 
 func main() {
-	fmt.Println("hello world!")
+	inPath := os.Args[1]
+	outPath := os.Args[2]
+
+	tf, err := torrentfile.Open(inPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = tf.DownloadToFile(outPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // pause
