@@ -1,2 +1,2 @@
 # torrent
-trying to make a simple torrent client
+Exploring bittorrent
