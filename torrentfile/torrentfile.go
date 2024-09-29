@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"torrent/p2p"
 
 	"github.com/jackpal/bencode-go"
@@ -19,15 +20,25 @@ type TorrentFile struct {
 	InfoHash    [20]byte
 	PieceHashes [][20]byte
 	PieceLength int
+	Files       []File
 	Length      int
 	Name        string
+}
+
+type File struct {
+	Length int
+	Path   string
 }
 
 type bencodeInfo struct {
 	Pieces      string `bencode:"pieces"`
 	PieceLength int    `bencode:"piece length"`
-	Length      int    `bencode:"length"`
 	Name        string `bencode:"name"`
+	Length      int    `bencode:"length"`
+	Files       []struct {
+		Length int      `bencode:"length"` // The length of the file, in bytes.
+		Path   []string `bencode:"path"`   // List of subdirectories, last is file name
+	} `bencode:"files"`
 }
 
 type bencodeTorrent struct {
@@ -37,6 +48,10 @@ type bencodeTorrent struct {
 }
 
 func (t *TorrentFile) DownloadToFile(path string) error {
+	log.Printf("Number of files is %d", len(t.Files))
+	for _, file := range t.Files {
+		log.Print(file.Path)
+	}
 	log.Printf("Number of trackers is %d", len(t.TrackerURLs))
 	log.Print("Current trackers")
 	for _, st := range t.TrackerURLs {
@@ -146,8 +161,26 @@ func (bto *bencodeTorrent) toTorrentFile() (TorrentFile, error) {
 		InfoHash:    infoHash,
 		PieceHashes: pieceHashes,
 		PieceLength: bto.Info.PieceLength,
-		Length:      bto.Info.Length,
 		Name:        bto.Info.Name,
 	}
+
+	if bto.Info.Length != 0 {
+		t.Files = append(t.Files, File{
+			Length: bto.Info.Length,
+			Path:   bto.Info.Name,
+		})
+		t.Length = bto.Info.Length
+	} else {
+		for _, file := range bto.Info.Files {
+			log.Print("test")
+			listPath := append([]string{bto.Info.Name}, file.Path...)
+			t.Files = append(t.Files, File{
+				Length: file.Length,
+				Path:   filepath.Join(listPath...),
+			})
+			t.Length += file.Length
+		}
+	}
+
 	return t, nil
 }
