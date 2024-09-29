@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"fmt"
+	"log"
 	"os"
 	"torrent/p2p"
 
@@ -14,6 +15,7 @@ import (
 const Port uint16 = 6881
 
 type TorrentFile struct {
+	TrackerURLs []string // Announce replacement (Tracker URLs)
 	Announce    string
 	InfoHash    [20]byte
 	PieceHashes [][20]byte
@@ -30,11 +32,19 @@ type bencodeInfo struct {
 }
 
 type bencodeTorrent struct {
-	Announce string      `bencode:"announce"`
-	Info     bencodeInfo `bencode:"info"`
+	Announce     string      `bencode:"announce"`
+	AnnounceList [][]string  `bencode:"announce-list"`
+	Info         bencodeInfo `bencode:"info"`
 }
 
 func (t *TorrentFile) DownloadToFile(path string) error {
+	log.Printf("Number of trackers is %d", len(t.TrackerURLs))
+	log.Print("Current trackers")
+	for _, st := range t.TrackerURLs {
+		log.Print(st)
+	}
+	log.Printf("Announce URL: %v", t.Announce)
+
 	var peerID [20]byte
 	_, err := rand.Read(peerID[:])
 	if err != nil {
@@ -123,7 +133,13 @@ func (bto *bencodeTorrent) toTorrentFile() (TorrentFile, error) {
 	if err != nil {
 		return TorrentFile{}, err
 	}
+	var trackerURLs []string
+	for _, list := range bto.AnnounceList {
+		trackerURLs = append(trackerURLs, list...)
+	}
+
 	t := TorrentFile{
+		TrackerURLs: trackerURLs,
 		Announce:    bto.Announce,
 		InfoHash:    infoHash,
 		PieceHashes: pieceHashes,
